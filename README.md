@@ -8,6 +8,7 @@ Welcome to your Java 21 learning journey! This project is structured to help you
 
 ### Currently Learning
 - ✅ **Enums** - `com.github.java_21.enums`
+- 🔄 **Records** - `com.github.java_21.records`
 
 ### Upcoming Topics
 (Roadmap to be created as you progress)

@@ -1,0 +1,482 @@
+================================================================================
+                         JAVA RECORDS - LEARNING NOTES
+================================================================================
+
+TOPIC OVERVIEW
+--------------
+Records are a special kind of class in Java designed to be transparent carriers
+for immutable data. Introduced in Java 14 (preview) and finalized in Java 16,
+records provide a compact syntax for declaring classes that are simple data 
+holders.
+
+WHY USE RECORDS?
+----------------
+- Conciseness: Drastically reduces boilerplate code
+- Immutability: All fields are final by default
+- Transparency: Clear intent that the class is a data carrier
+- Built-in methods: Automatic equals(), hashCode(), toString()
+- Pattern Matching: Works seamlessly with pattern matching (Java 16+)
+- Readability: Makes code more maintainable and easier to understand
+
+================================================================================
+BASIC SYNTAX
+================================================================================
+
+1. SIMPLE RECORD DECLARATION
+-----------------------------
+// Traditional class (verbose)
+public final class Point {
+    private final int x;
+    private final int y;
+    
+    public Point(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+    
+    public int x() { return x; }
+    public int y() { return y; }
+    
+    @Override
+    public boolean equals(Object o) { /* ... */ }
+    
+    @Override
+    public int hashCode() { /* ... */ }
+    
+    @Override
+    public String toString() { /* ... */ }
+}
+
+// Record (concise) - does all of the above automatically!
+public record Point(int x, int y) { }
+
+
+2. WHAT RECORDS PROVIDE AUTOMATICALLY
+--------------------------------------
+- Private final fields for each component
+- Public constructor (canonical constructor)
+- Public accessor methods (x(), y() - NOT getX(), getY())
+- equals() method
+- hashCode() method
+- toString() method
+
+
+3. CREATING AND USING RECORDS
+------------------------------
+record Person(String name, int age) { }
+
+// Creating instances
+Person person = new Person("Alice", 30);
+
+// Accessing data (using accessor methods, not getters)
+String name = person.name();  // NOT person.getName()
+int age = person.age();
+
+// toString() output
+System.out.println(person);  // Person[name=Alice, age=30]
+
+================================================================================
+RECORD FEATURES
+================================================================================
+
+1. COMPACT CONSTRUCTOR
+-----------------------
+// Validate or normalize data without repeating parameters
+record Person(String name, int age) {
+    // Compact constructor - no parameter list needed
+    public Person {
+        if (age < 0) {
+            throw new IllegalArgumentException("Age cannot be negative");
+        }
+        // Fields are automatically assigned after this block
+        name = name.trim();  // Normalize the name
+    }
+}
+
+
+2. CANONICAL CONSTRUCTOR (EXPLICIT)
+------------------------------------
+record Person(String name, int age) {
+    // Full canonical constructor
+    public Person(String name, int age) {
+        if (age < 0) {
+            throw new IllegalArgumentException("Age cannot be negative");
+        }
+        this.name = name.trim();
+        this.age = age;
+    }
+}
+
+
+3. ADDITIONAL CONSTRUCTORS
+---------------------------
+record Person(String name, int age) {
+    // Compact constructor for validation
+    public Person {
+        if (age < 0) throw new IllegalArgumentException("Age cannot be negative");
+    }
+    
+    // Additional constructor must delegate to canonical constructor
+    public Person(String name) {
+        this(name, 0);  // Must call canonical constructor
+    }
+}
+
+
+4. INSTANCE METHODS
+-------------------
+record Rectangle(double width, double height) {
+    // You can add instance methods
+    public double area() {
+        return width * height;
+    }
+    
+    public double perimeter() {
+        return 2 * (width + height);
+    }
+    
+    public boolean isSquare() {
+        return width == height;
+    }
+}
+
+
+5. STATIC METHODS AND FIELDS
+-----------------------------
+record Circle(double radius) {
+    // Static fields
+    private static final double PI = 3.14159;
+    
+    // Static methods (factory methods are common)
+    public static Circle ofDiameter(double diameter) {
+        return new Circle(diameter / 2);
+    }
+    
+    // Instance method using static field
+    public double area() {
+        return PI * radius * radius;
+    }
+}
+
+
+6. OVERRIDING ACCESSOR METHODS
+-------------------------------
+record Person(String name, int age) {
+    // Override accessor to add custom logic
+    @Override
+    public String name() {
+        return name.toUpperCase();  // Always return uppercase
+    }
+}
+
+
+7. OVERRIDING equals(), hashCode(), toString()
+-----------------------------------------------
+record Person(String name, int age) {
+    @Override
+    public String toString() {
+        return name + " (" + age + " years old)";
+    }
+    
+    // Can override equals() and hashCode() if needed
+    // (but usually the default implementation is sufficient)
+}
+
+================================================================================
+RECORD RESTRICTIONS
+================================================================================
+
+❌ Records CANNOT:
+------------------
+1. Extend other classes (records implicitly extend java.lang.Record)
+2. Declare instance fields beyond the components
+3. Be abstract
+4. Have non-final instance fields
+
+✅ Records CAN:
+---------------
+1. Implement interfaces
+2. Have static fields and methods
+3. Have instance methods
+4. Override accessor methods
+5. Have nested classes/records
+6. Be generic
+7. Have annotations
+
+================================================================================
+RECORDS WITH INTERFACES
+================================================================================
+
+interface Describable {
+    String getDescription();
+}
+
+record Product(String name, double price) implements Describable {
+    @Override
+    public String getDescription() {
+        return name + " costs $" + price;
+    }
+}
+
+================================================================================
+GENERIC RECORDS
+================================================================================
+
+record Pair<T, U>(T first, U second) { }
+
+// Usage
+Pair<String, Integer> pair = new Pair<>("Age", 25);
+String key = pair.first();
+Integer value = pair.second();
+
+================================================================================
+NESTED RECORDS
+================================================================================
+
+record Order(String id, Customer customer, List<Item> items) {
+    // Nested record
+    record Item(String name, int quantity, double price) {
+        public double total() {
+            return quantity * price;
+        }
+    }
+}
+
+================================================================================
+RECORDS VS CLASSES
+================================================================================
+
+USE RECORDS WHEN:
+-----------------
+✅ You need a simple data carrier
+✅ Immutability is desired
+✅ You want value-based equality (based on data, not identity)
+✅ You need a DTO (Data Transfer Object)
+✅ You're modeling domain objects with clear data
+
+USE CLASSES WHEN:
+-----------------
+✅ You need mutable state
+✅ You need inheritance
+✅ You have complex business logic
+✅ You need identity-based equality
+✅ You need fine control over encapsulation
+
+================================================================================
+PATTERN MATCHING WITH RECORDS (Java 16+)
+================================================================================
+
+record Point(int x, int y) { }
+
+// Pattern matching in instanceof (Java 16+)
+Object obj = new Point(10, 20);
+if (obj instanceof Point(int x, int y)) {
+    System.out.println("x: " + x + ", y: " + y);
+}
+
+// Pattern matching in switch (Java 21+)
+String describe(Object obj) {
+    return switch (obj) {
+        case Point(int x, int y) -> "Point at (" + x + ", " + y + ")";
+        case String s -> "String: " + s;
+        default -> "Unknown";
+    };
+}
+
+================================================================================
+BEST PRACTICES
+================================================================================
+
+1. ✅ Use records for DTOs and value objects
+   Example: API responses, database entities, configuration objects
+
+2. ✅ Keep records simple and focused on data
+   Avoid complex business logic in records
+
+3. ✅ Use compact constructors for validation
+   Validate data at construction time
+
+4. ✅ Prefer records over classes for immutable data
+   Less code, clearer intent
+
+5. ✅ Use descriptive component names
+   Components become part of the public API
+
+6. ✅ Consider using records with collections
+   Records work great with streams and collections
+
+7. ⚠️  Be careful with mutable components
+   If a component is a mutable object (like a List), the record itself
+   isn't truly immutable. Consider defensive copying.
+
+8. ✅ Use static factory methods for complex creation logic
+   Keep constructors simple, use factories for complex scenarios
+
+================================================================================
+COMMON PATTERNS
+================================================================================
+
+1. BUILDER PATTERN WITH RECORDS
+--------------------------------
+record Person(String name, int age, String email) {
+    public static Builder builder() {
+        return new Builder();
+    }
+    
+    public static class Builder {
+        private String name;
+        private int age;
+        private String email;
+        
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+        
+        public Builder age(int age) {
+            this.age = age;
+            return this;
+        }
+        
+        public Builder email(String email) {
+            this.email = email;
+            return this;
+        }
+        
+        public Person build() {
+            return new Person(name, age, email);
+        }
+    }
+}
+
+
+2. DEFENSIVE COPYING FOR MUTABLE COMPONENTS
+--------------------------------------------
+record Team(String name, List<String> members) {
+    // Compact constructor with defensive copy
+    public Team {
+        members = List.copyOf(members);  // Create immutable copy
+    }
+}
+
+
+3. VALIDATION IN COMPACT CONSTRUCTOR
+-------------------------------------
+record Email(String address) {
+    public Email {
+        if (address == null || !address.contains("@")) {
+            throw new IllegalArgumentException("Invalid email");
+        }
+    }
+}
+
+================================================================================
+REAL-WORLD USE CASES
+================================================================================
+
+1. DTOs (Data Transfer Objects)
+   - API request/response objects
+   - Database query results
+   - Configuration objects
+
+2. Value Objects (Domain-Driven Design)
+   - Money, Address, Coordinates
+   - Immutable domain concepts
+
+3. Tuples and Pairs
+   - Returning multiple values from methods
+   - Map entries
+
+4. Event Objects
+   - Event sourcing
+   - Message passing
+
+5. Configuration
+   - Application settings
+   - Feature flags
+
+6. Test Data
+   - Test fixtures
+   - Mock objects
+
+================================================================================
+RECORDS IN JAVA 21
+================================================================================
+
+Java 21 enhances records with:
+
+1. Record Patterns (Finalized in Java 21)
+   - Deconstruct records in pattern matching
+   - Use in switch expressions and statements
+
+2. Unnamed Patterns
+   - Use _ for components you don't need
+   
+   if (obj instanceof Point(int x, _)) {
+       // Only care about x coordinate
+   }
+
+================================================================================
+COMMON PITFALLS
+================================================================================
+
+1. ❌ Trying to add mutable instance fields
+   Records are meant to be immutable
+
+2. ❌ Forgetting that components are public
+   All components become part of the public API
+
+3. ❌ Not handling mutable components properly
+   Use defensive copying for collections and mutable objects
+
+4. ❌ Using records when you need inheritance
+   Records cannot extend other classes
+
+5. ❌ Expecting getter methods (getX())
+   Records use accessor methods (x()), not getters
+
+6. ❌ Modifying mutable components after creation
+   Breaks immutability contract
+
+================================================================================
+MIGRATION FROM CLASSES TO RECORDS
+================================================================================
+
+Before (Class):
+---------------
+public final class Person {
+    private final String name;
+    private final int age;
+    
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+    
+    public String getName() { return name; }
+    public int getAge() { return age; }
+    
+    // equals, hashCode, toString...
+}
+
+After (Record):
+---------------
+public record Person(String name, int age) { }
+
+⚠️  Note: Accessor methods change from getName() to name()
+   Update all calling code accordingly!
+
+================================================================================
+PRACTICE EXERCISES
+================================================================================
+
+1. Create a record for a Book with title, author, ISBN, and price
+2. Add validation to ensure price is positive
+3. Create a record for a 3D Point with x, y, z coordinates
+4. Implement a distance() method to calculate distance from origin
+5. Create a generic Pair record
+6. Create a record that implements Comparable
+7. Build a record with a List component and proper defensive copying
+8. Create nested records for an Order system
+
+================================================================================
